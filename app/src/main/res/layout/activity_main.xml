@@ -1,0 +1,28 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+    <include
+        android:id="@+id/activitiy_main_toolbar"
+        layout="@layout/toolbar"></include>
+
+    <com.github.ksoichiro.android.observablescrollview.ObservableGridView
+        android:id="@+id/activity_main_grid_view_wallpapers"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:numColumns="2"
+        android:stretchMode="columnWidth">
+
+    </com.github.ksoichiro.android.observablescrollview.ObservableGridView>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/imageView"
+        android:layout_gravity="center_horizontal|top" />
+
+</FrameLayout>

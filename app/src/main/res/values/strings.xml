@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">TenTenBackground</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_wallpaper_preview">WallpaperPreviewActivity</string>
+    <string name="title_activity_crop">CropActivity</string>
+</resources>
