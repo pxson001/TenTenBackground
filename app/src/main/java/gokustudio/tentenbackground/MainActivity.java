@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
             }
         });
 
-        //Test merge change
+        //Test merge change the first
 
         new LoadingWallPaperTask("https://picasaweb.google.com/data/feed/api/user/103790232873821665119/albumid/6192548855768281841?imgmax=2048").execute();
     }
