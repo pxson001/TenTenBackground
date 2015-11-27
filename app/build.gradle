@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "gokustudio.tentenbackground"
-        minSdkVersion 14
+        minSdkVersion 11
         targetSdkVersion 23
         versionCode 1
         versionName "1.0"
@@ -21,6 +21,10 @@ android {
     lintOptions {
         disable 'InvalidPackage'
     }
+
+    packagingOptions {
+        exclude 'META-INF/services/javax.annotation.processing.Processor'
+    }
 }
 
 
@@ -31,12 +35,37 @@ dependencies {
     compile 'com.jakewharton:butterknife:7.0.1'
     compile 'com.github.ksoichiro:android-observablescrollview:1.6.0'
     compile 'com.flaviofaria:kenburnsview:1.0.6'
-    compile 'com.naver.android.helloyako:imagecropview:1.0.3'
-    compile 'com.edmodo:cropper:1.0.1'
     compile 'com.isseiaoki:simplecropview:1.0.8'
-
-    compile files('libs/gdata-photos-1.0.jar')
-    compile files('libs/gdata-client-1.0.jar')
+    compile 'com.github.manuelpeinado.fadingactionbar:fadingactionbar:3.1.2'
+    compile 'me.henrytao:smooth-app-bar-layout:0.1.0'
+    compile 'com.android.support:cardview-v7:23.0.1'
+    compile 'com.android.support:recyclerview-v7:23.0.1'
+    compile 'com.android.support:design:23.0.1'
     compile files('libs/nineoldandroids-2.4.0.jar')
     compile files('libs/library-1.2.jar')
+    compile project(':material-dialogs')
+    compile files('libs/commons-io-2.4.jar')
+    compile 'com.parse.bolts:bolts-android:1.+'
+    compile 'com.parse:parse-android:1.+'
+    compile 'com.github.antonyt:InfiniteViewPager:v1.0.0'
+    compile 'com.xgc1986.android:parallaxpagertransformer:1.0.3'
+    compile 'de.hdodenhof:circleimageview:2.0.0'
+    compile 'com.wefika:flowlayout:0.4.1'
+    compile files('libs/gson-2.2.2.jar')
+    compile 'com.github.bumptech.glide:glide:3.6.1'
+    compile files('libs/realm-0.84.1.jar')
+    compile files('libs/realm-0.84.1-javadoc.jar')
+
+
+    compile('com.mikepenz:materialdrawer:4.5.1@aar') {
+        transitive = true
+    }
+    compile 'com.mikepenz:iconics-core:2.2.0@aar'
+    compile 'com.mikepenz:google-material-typeface:2.2.0.1@aar'
+}
+
+repositories {
+    mavenCentral()
+    // ...
+    maven { url "https://jitpack.io" }
 }

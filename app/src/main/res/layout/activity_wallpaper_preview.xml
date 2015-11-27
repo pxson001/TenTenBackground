@@ -2,7 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="gokustudio.tentenbackground.WallpaperPreviewActivity">
+    android:fitsSystemWindows="true"
+    tools:context="gokustudio.tentenbackground.activities.WallpaperPreviewActivity">
 
     <com.flaviofaria.kenburnsview.KenBurnsView
         android:id="@+id/wallpaper_activity_iv_preview"

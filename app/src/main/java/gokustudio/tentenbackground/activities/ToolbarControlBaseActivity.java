@@ -1,4 +1,4 @@
-package gokustudio.tentenbackground;
+package gokustudio.tentenbackground.activities;
 
 import android.animation.ValueAnimator;
 import android.os.Bundle;
@@ -12,6 +12,8 @@ import com.github.ksoichiro.android.observablescrollview.ObservableScrollViewCal
 import com.github.ksoichiro.android.observablescrollview.ScrollState;
 import com.github.ksoichiro.android.observablescrollview.Scrollable;
 import com.nineoldandroids.view.ViewHelper;
+
+import gokustudio.tentenbackground.R;
 
 /**
  * Created by son on 9/15/15.

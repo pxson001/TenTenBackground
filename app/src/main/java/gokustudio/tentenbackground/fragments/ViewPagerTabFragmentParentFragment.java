@@ -1,4 +1,4 @@
-package gokustudio.tentenbackground;
+package gokustudio.tentenbackground.fragments;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -22,6 +22,7 @@ import com.github.ksoichiro.android.observablescrollview.TouchInterceptionFrameL
 import com.nineoldandroids.animation.ValueAnimator;
 import com.nineoldandroids.view.ViewHelper;
 
+import gokustudio.tentenbackground.R;
 import google.samples.apps.iosched.ui.widget.SlidingTabLayout;
 
 /**
@@ -148,7 +149,7 @@ public class ViewPagerTabFragmentParentFragment extends Fragment implements Obse
         if (view == null) {
             return null;
         }
-        return (Scrollable) view.findViewById(R.id.fragment_gridview);
+        return (Scrollable) view.findViewById(R.id.scroll);
     }
 
     private void adjustToolbar(ScrollState scrollState) {
@@ -236,7 +237,7 @@ public class ViewPagerTabFragmentParentFragment extends Fragment implements Obse
      */
     private static class NavigationAdapter extends CacheFragmentStatePagerAdapter {
 
-        private static final String[] TITLES = new String[]{"Applepie", "Butter Cookie", "Cupcake", "Donut", "Eclair", "Froyo", "Gingerbread", "Honeycomb", "Ice Cream Sandwich", "Jelly Bean", "KitKat", "Lollipop"};
+        private static final String[] TITLES = new String[]{"Recent","Categories"};
 
         public NavigationAdapter(FragmentManager fm) {
             super(fm);
@@ -244,14 +245,13 @@ public class ViewPagerTabFragmentParentFragment extends Fragment implements Obse
 
         @Override
         protected Fragment createItem(int position) {
-            Fragment f;
+            Fragment f = null;
             final int pattern = position % 5;
             switch (pattern) {
-                case 3:
-                    f = new ViewPagerTabFragmentGridViewFragment();
+                case 1:
+                    f = new CategoriesFragment();
                     break;
-                case 4:
-                default:
+                case 0:
                     f = new ViewPagerTabFragmentGridViewFragment();
                     break;
             }

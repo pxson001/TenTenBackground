@@ -1,39 +1,37 @@
-package gokustudio.tentenbackground;
+package gokustudio.tentenbackground.activities;
 
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Point;
-import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
-import android.support.v4.app.NavUtils;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.Transformation;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.flaviofaria.kenburnsview.KenBurnsView;
-import com.flaviofaria.kenburnsview.Transition;
-import com.flaviofaria.kenburnsview.TransitionGenerator;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import gokustudio.tentenbackground.model.Wallpaper;
+import gokustudio.tentenbackground.R;
+import gokustudio.tentenbackground.callbacks.DownloadedWallpaperListener;
+import gokustudio.tentenbackground.models.parse.Wallpaper;
+import gokustudio.tentenbackground.tasks.DownloadWallpaperTask;
+import gokustudio.tentenbackground.utils.Utils;
 import uk.co.senab.photoview.PhotoViewAttacher;
 
-public class WallpaperPreviewActivity extends AppCompatActivity {
+public class WallpaperPreviewActivity extends AppCompatActivity implements DownloadedWallpaperListener {
+
+    public static final String EXTRA_WALLPAPER = "extra_wallpaper";
+    public static final String EXTRA_IS_KENBURN_VIEW_PAUSED = "extra_is_kenburn_view_paused";
+    public static final String EXTRA_ACTION_DOWNLOAD = "extra_action_download";
 
     @Bind(R.id.wallpaper_activity_iv_preview)
     KenBurnsView ivWallpaperPreview;
@@ -47,37 +45,42 @@ public class WallpaperPreviewActivity extends AppCompatActivity {
     @Bind(R.id.toolbar)
     Toolbar toolbar;
 
-    private Utils utils;
-    private Wallpaper wallpaper;
+    Utils utils;
     PhotoViewAttacher mAttacher;
 
-    private boolean isKenburnsViewPaused = true;
+    Wallpaper wallpaper;
+    boolean isKenburnsViewPaused = true;
+    boolean actionDownload = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_wallpaper_preview);
         ButterKnife.bind(this);
+
         utils = new Utils(this);
 
         if (savedInstanceState == null) {
             Intent intent = getIntent();
-            if (intent.hasExtra("wallpaper")) {
-                wallpaper = (Wallpaper) intent.getSerializableExtra("wallpaper");
+            if (intent.hasExtra(EXTRA_WALLPAPER)) {
+                wallpaper = (Wallpaper) intent.getSerializableExtra(EXTRA_WALLPAPER);
             }
         } else {
-            wallpaper = (Wallpaper) savedInstanceState.getSerializable("wallpaper");
+            wallpaper = (Wallpaper) savedInstanceState.getSerializable(EXTRA_WALLPAPER);
+            isKenburnsViewPaused = savedInstanceState.getBoolean(EXTRA_IS_KENBURN_VIEW_PAUSED);
+            actionDownload = savedInstanceState.getBoolean(EXTRA_ACTION_DOWNLOAD);
         }
 
 
-        toolbar.setTitle(wallpaper.getTitle());
+        toolbar.setBackgroundColor(Color.TRANSPARENT);
+        toolbar.setTitle(wallpaper.getName());
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDefaultDisplayHomeAsUpEnabled(true);
 
 
-        Picasso.with(this).load(wallpaper.getOriginalUrl()).into(ivWallpaperPreview, new Callback() {
+        Picasso.with(this).load(wallpaper.getUrl_2()).into(ivWallpaperPreview, new Callback() {
             @Override
             public void onSuccess() {
                 isKenburnsViewPaused = false;
@@ -107,14 +110,14 @@ public class WallpaperPreviewActivity extends AppCompatActivity {
 
             }
         });
-
-
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-        outState.putSerializable("wallpaper", wallpaper);
         super.onSaveInstanceState(outState);
+        outState.putSerializable(EXTRA_WALLPAPER, wallpaper);
+        outState.putBoolean(EXTRA_IS_KENBURN_VIEW_PAUSED, isKenburnsViewPaused);
+        outState.putBoolean(EXTRA_ACTION_DOWNLOAD, actionDownload);
     }
 
     @Override
@@ -142,35 +145,38 @@ public class WallpaperPreviewActivity extends AppCompatActivity {
 
     @OnClick(R.id.wallpaper_activity_btn_set_wallpaper)
     public void setWallpaper() {
-        final Bitmap bitmap = ((BitmapDrawable) ivWallpaperPreview.getDrawable()).getBitmap();
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Message").setMessage("Do you want to set this image as wallpaper?").setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                utils.setAsWallpaper(bitmap);
-            }
-        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-            }
-        }).create().show();
+        actionDownload = false;
+        String filePath = utils.getFileFromSDCard(wallpaper.getName());
+        if(filePath == null) {
+            new DownloadWallpaperTask(this, this).execute(wallpaper.getUrl_2());
+        } else {
+            startCropActivity(filePath);
+        }
     }
 
     @OnClick(R.id.wallpaper_activity_btn_download_wallpapaer)
     public void downloadWallpaper() {
-        final Bitmap bitmap = ((BitmapDrawable) ivWallpaperPreview.getDrawable()).getBitmap();
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Message").setMessage("Do you want to set this image as wallpaper?").setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                utils.saveImageToSDCard(bitmap);
-            }
-        }).setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                dialogInterface.dismiss();
-            }
-        }).create().show();
+        actionDownload = true;
+        String filePath = utils.getFileFromSDCard(wallpaper.getName());
+        if(filePath == null) {
+            new DownloadWallpaperTask(this, this).execute(wallpaper.getUrl_2());
+        } else {
+            Toast.makeText(this, "File is existed in SD Card", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onDownloaded(String path) {
+        if(actionDownload){
+            Toast.makeText(this,"Download successfully", Toast.LENGTH_SHORT).show();
+        } else {
+            startCropActivity(path);
+        }
+    }
+
+    public void startCropActivity(String path){
+        Intent intent = new Intent(this, CropActivity.class);
+        intent.putExtra("IMG_PATH", path);
+        startActivity(intent);
     }
 }

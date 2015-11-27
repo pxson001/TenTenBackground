@@ -1,8 +1,9 @@
-package gokustudio.tentenbackground;
+package gokustudio.tentenbackground.utils;
 
 import android.app.WallpaperManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.os.Environment;
 import android.util.Log;
@@ -48,17 +49,17 @@ public class Utils {
         return columnWidth;
     }
 
-    public void saveImageToSDCard(Bitmap bitmap) {
+    public String saveImageToSDCard(Bitmap bitmap) {
         File myDir = new File(
                 Environment
                         .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-                "Downloads");
+                _context.getApplicationInfo().loadLabel(_context.getPackageManager()).toString());
 
         myDir.mkdirs();
         Random generator = new Random();
         int n = 10000;
         n = generator.nextInt(n);
-        String fname = "Wallpaper-" + n + ".jpg";
+        String fname = "LocalWallpaper-" + n + ".jpg";
         File file = new File(myDir, fname);
         if (file.exists())
             file.delete();
@@ -68,13 +69,37 @@ public class Utils {
             out.flush();
             out.close();
 
-            Log.d(TAG, "Wallpaper saved to: " + file.getAbsolutePath());
+            Log.d(TAG, "LocalWallpaper saved to: " + file.getAbsolutePath());
             Toast.makeText(_context, "Saved " + file.getName() + " successfully", Toast.LENGTH_SHORT).show();
+            return file.getAbsolutePath();
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(_context, "Error when saving " + file.getName() + " successfully", Toast.LENGTH_SHORT).show();
         }
+        return null;
     }
+
+    public String getFileFromSDCard(String fileName){
+        File folder = new File(Environment
+                .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                _context.getApplicationInfo().loadLabel(_context.getPackageManager()).toString());
+        if(folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            for(File file : files){
+                if(file.getName().equals(fileName)){
+                    return file.getAbsolutePath();
+                }
+            }
+        }
+        return null;
+    }
+
+    public Bitmap getImageFromSDCard(String path) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        return BitmapFactory.decodeFile(path, options);
+    }
+
 
     public void setAsWallpaper(Bitmap bitmap) {
         try {
@@ -83,8 +108,27 @@ public class Utils {
             Toast.makeText(_context, "Set wallpaper successfully", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(_context, "Can set wallpaper", Toast.LENGTH_SHORT).show();
+            Toast.makeText(_context, "Can't set wallpaper", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void setAsWallpaper(String filePath){
+        Bitmap bitmap = getImageFromSDCard(filePath);
+        setAsWallpaper(bitmap);
+    }
+
+    public static String getDownloadPath(Context context) {
+        String path = Environment
+                .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + "/" + context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
+        File folder = new File(path);
+        if (!folder.exists()) {
+            folder.mkdir();
+        } else {
+            if (!folder.isDirectory()) {
+                folder.mkdir();
+            }
+        }
+        return path;
     }
 }
 
