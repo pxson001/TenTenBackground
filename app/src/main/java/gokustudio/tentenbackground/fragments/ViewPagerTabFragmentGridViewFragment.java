@@ -3,7 +3,6 @@ package gokustudio.tentenbackground.fragments;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.Display;
@@ -16,21 +15,22 @@ import android.widget.ProgressBar;
 
 import com.github.ksoichiro.android.observablescrollview.ObservableGridView;
 import com.github.ksoichiro.android.observablescrollview.ObservableScrollViewCallbacks;
-import com.parse.ParseException;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
+import de.greenrobot.event.EventBus;
 import gokustudio.tentenbackground.App;
 import gokustudio.tentenbackground.R;
 import gokustudio.tentenbackground.activities.WallpaperDetailActivity;
 import gokustudio.tentenbackground.adapters.WallpaperAdapter;
 import gokustudio.tentenbackground.callbacks.EndlessScrollListener;
+import gokustudio.tentenbackground.callbacks.LoadWallpapersByRecentEvent;
 import gokustudio.tentenbackground.constants.ActivityValues;
 import gokustudio.tentenbackground.models.parse.Wallpaper;
 import gokustudio.tentenbackground.parse.WallpaperEndpoint;
+import gokustudio.tentenbackground.tasks.LoadWallpapersByRecentTask;
 import gokustudio.tentenbackground.utils.DimensionUtils;
 
 /**
@@ -49,7 +49,13 @@ public class ViewPagerTabFragmentGridViewFragment extends Fragment implements Ad
     private List<Wallpaper> listWallpapers;
     private WallpaperAdapter wallpaperAdapter;
     private WallpaperEndpoint wallpaperEndpoint;
-    private LoadRecentWallpapersTask loadRecentWallpapersTask;
+    private LoadWallpapersByRecentTask loadWallpapersByRecentTask;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EventBus.getDefault().register(this);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -75,14 +81,15 @@ public class ViewPagerTabFragmentGridViewFragment extends Fragment implements Ad
         super.onActivityCreated(savedInstanceState);
 
         listWallpapers = App.getLoadedWallpapers();
-        wallpaperAdapter = new WallpaperAdapter(getActivity(),listWallpapers);
+        wallpaperAdapter = new WallpaperAdapter(getActivity(), listWallpapers);
         gvWallpapers.setAdapter(wallpaperAdapter);
         gvWallpapers.setOnItemClickListener(this);
 
         wallpaperEndpoint = App.getWallpaperEndpoint();
-        if(listWallpapers.isEmpty()) {
-            loadRecentWallpapersTask = new LoadRecentWallpapersTask(wallpaperEndpoint, false);
-            loadRecentWallpapersTask.execute();
+        if (listWallpapers.isEmpty()) {
+            updateUI(false, false);
+            loadWallpapersByRecentTask = new LoadWallpapersByRecentTask(0, false);
+            loadWallpapersByRecentTask.execute();
         } else {
             updateUI(false, true);
         }
@@ -90,16 +97,17 @@ public class ViewPagerTabFragmentGridViewFragment extends Fragment implements Ad
         gvWallpapers.setOnScrollListener(new EndlessScrollListener() {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
-                loadRecentWallpapersTask = new LoadRecentWallpapersTask(wallpaperEndpoint, true);
-                loadRecentWallpapersTask.execute();
+                updateUI(true, false);
+                loadWallpapersByRecentTask = new LoadWallpapersByRecentTask(App.getLoadedWallpapers().size(), true);
+                loadWallpapersByRecentTask.execute();
             }
         });
     }
 
     @Override
     public void onDestroyView() {
-        if (loadRecentWallpapersTask != null)
-            loadRecentWallpapersTask.cancel(true);
+        if (loadWallpapersByRecentTask != null)
+            loadWallpapersByRecentTask.cancel(true);
         super.onDestroyView();
     }
 
@@ -116,14 +124,14 @@ public class ViewPagerTabFragmentGridViewFragment extends Fragment implements Ad
         if (isUpdate) {
             pbLoader.setVisibility(View.GONE);
             gvWallpapers.setVisibility(View.VISIBLE);
-            if(isComplete){
+            if (isComplete) {
                 footerLoadMore.setVisibility(View.GONE);
             } else {
                 footerLoadMore.setVisibility(View.VISIBLE);
             }
         } else {
             footerLoadMore.setVisibility(View.GONE);
-            if(isComplete){
+            if (isComplete) {
                 pbLoader.setVisibility(View.GONE);
                 gvWallpapers.setVisibility(View.VISIBLE);
             } else {
@@ -135,7 +143,7 @@ public class ViewPagerTabFragmentGridViewFragment extends Fragment implements Ad
 
 
     private void refreshGridView() {
-        int gridViewEntrySize = DimensionUtils.dpToPx(getActivity(),160);
+        int gridViewEntrySize = DimensionUtils.dpToPx(getActivity(), 160);
         int gridViewSpacing = 0;
 
         WindowManager wm = (WindowManager) getActivity().getSystemService(Context.WINDOW_SERVICE);
@@ -158,39 +166,10 @@ public class ViewPagerTabFragmentGridViewFragment extends Fragment implements Ad
         refreshGridView();
     }
 
-
-    class LoadRecentWallpapersTask extends AsyncTask<Void, Void, List<Wallpaper>> {
-
-        private WallpaperEndpoint wallpaperEndpoint;
-        private boolean isUpdate;
-
-        public LoadRecentWallpapersTask(WallpaperEndpoint wallpaperEndpoint, boolean isUpdate) {
-            this.wallpaperEndpoint = wallpaperEndpoint;
-            this.isUpdate = isUpdate;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            updateUI(isUpdate,false);
-        }
-
-        @Override
-        protected List<Wallpaper> doInBackground(Void... voids) {
-            List<Wallpaper> wallpapers = new ArrayList<>();
-            try {
-                wallpapers = wallpaperEndpoint.getAllRecent(App.getLoadedWallpapers().size(), App.LIMIT_LOAD_WALLPAPERS);
-            } catch (ParseException ex) {
-                ex.printStackTrace();
-            }
-            return wallpapers;
-        }
-
-        @Override
-        protected void onPostExecute(List<Wallpaper> wallpapers) {
-            App.addLoadedWallpaper(wallpapers, isUpdate);
-            listWallpapers = App.getLoadedWallpapers();
-            wallpaperAdapter.update(listWallpapers);
-            updateUI(isUpdate,true);
-        }
+    public void onEvent(LoadWallpapersByRecentEvent event){
+        List<Wallpaper> wallpapers = App.getLoadedWallpapers();
+        wallpaperAdapter.update(wallpapers);
+        updateUI(event.isUpdate(), true);
     }
+
 }

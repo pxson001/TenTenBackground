@@ -7,8 +7,6 @@
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/primaryColor</item>
         <item name="colorPrimaryDark">@color/primaryColorDark</item>
-        <item name="android:windowBackground">@color/window_background</item>
-
     </style>
 
     <style name="Widget.CardContent" parent="android:Widget">

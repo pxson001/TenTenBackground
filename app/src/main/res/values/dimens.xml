@@ -27,4 +27,9 @@
     <dimen name="card_margin">16dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="list_item_avatar_size">40dp</dimen>
+
+    <dimen name="item_margin">8dp</dimen>
+    <dimen name="item_margin_half">8dp</dimen>
+
+    <dimen name="column_width">80dp</dimen>
 </resources>

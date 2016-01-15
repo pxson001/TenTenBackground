@@ -16,14 +16,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.ButterKnife;
+import de.greenrobot.event.EventBus;
 import gokustudio.tentenbackground.App;
 import gokustudio.tentenbackground.R;
 import gokustudio.tentenbackground.adapters.WallpaperAdapter;
 import gokustudio.tentenbackground.callbacks.EndlessScrollListener;
+import gokustudio.tentenbackground.callbacks.LoadWallpapersByCategoryEvent;
 import gokustudio.tentenbackground.constants.ActivityValues;
 import gokustudio.tentenbackground.models.parse.Category;
 import gokustudio.tentenbackground.models.parse.Wallpaper;
 import gokustudio.tentenbackground.parse.WallpaperEndpoint;
+import gokustudio.tentenbackground.tasks.LoadWallpapersByCategoryTask;
 
 /**
  * Created by son on 11/2/15.
@@ -42,6 +45,9 @@ public class WallpaperByCategoryActivity extends BaseActivity implements Observa
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        EventBus.getDefault().register(this);
+
         setContentView(R.layout.activity_wallpaper_by_category);
         ButterKnife.bind(this);
 
@@ -69,7 +75,9 @@ public class WallpaperByCategoryActivity extends BaseActivity implements Observa
 
 
         if (listWallpapers.isEmpty()) {
-            loadWallpapersByCategoryTask = new LoadWallpapersByCategoryTask(wallpaperEndpoint, category.getObjectId(), false);
+            updateUI(false, false);
+
+            loadWallpapersByCategoryTask = new LoadWallpapersByCategoryTask(category.getObjectId(),App.getLoadedWallpapersByCategory().size(), false);
             loadWallpapersByCategoryTask.execute();
         } else {
             updateUI(false, true);
@@ -78,7 +86,9 @@ public class WallpaperByCategoryActivity extends BaseActivity implements Observa
         gvWallpapers.setOnScrollListener(new EndlessScrollListener() {
             @Override
             public void onLoadMore(int page, int totalItemsCount) {
-                loadWallpapersByCategoryTask = new LoadWallpapersByCategoryTask(wallpaperEndpoint, category.getObjectId(), true);
+                updateUI(true, false);
+
+                loadWallpapersByCategoryTask = new LoadWallpapersByCategoryTask(category.getObjectId(),App.getLoadedWallpapersByCategory().size(), true);
                 loadWallpapersByCategoryTask.execute();
             }
         });
@@ -120,42 +130,10 @@ public class WallpaperByCategoryActivity extends BaseActivity implements Observa
         startActivity(intent);
     }
 
+    public void onEvent(LoadWallpapersByCategoryEvent event){
+        listWallpapers = App.getLoadedWallpapersByCategory();
+        wallpaperAdapter.update(listWallpapers);
 
-    class LoadWallpapersByCategoryTask extends AsyncTask<Void, Void, List<Wallpaper>> {
-
-        private WallpaperEndpoint wallpaperEndpoint;
-        private String categoryObjectId;
-        private boolean isUpdate;
-
-        public LoadWallpapersByCategoryTask(WallpaperEndpoint wallpaperEndpoint, String categoryObjectId, boolean isUpdate) {
-            this.wallpaperEndpoint = wallpaperEndpoint;
-            this.categoryObjectId = categoryObjectId;
-            this.isUpdate = isUpdate;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            updateUI(isUpdate, false);
-        }
-
-        @Override
-        protected List<Wallpaper> doInBackground(Void... voids) {
-            List<Wallpaper> wallpapers = new ArrayList<>();
-            try {
-                wallpapers = wallpaperEndpoint.getByCategory(categoryObjectId, listWallpapers.size(), App.LIMIT_LOAD_WALLPAPERS);
-                System.out.println("LocalWallpaper by category : " + wallpapers.size());
-            } catch (ParseException ex) {
-                ex.printStackTrace();
-            }
-            return wallpapers;
-        }
-
-        @Override
-        protected void onPostExecute(List<Wallpaper> wallpapers) {
-            App.addLoadedWallpaperByCategory(wallpapers, isUpdate);
-            listWallpapers = App.getLoadedWallpapersByCategory();
-            wallpaperAdapter.update(listWallpapers);
-            updateUI(isUpdate, true);
-        }
+        updateUI(event.isUpdate(), true);
     }
 }

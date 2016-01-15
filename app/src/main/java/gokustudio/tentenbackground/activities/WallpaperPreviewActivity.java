@@ -2,14 +2,17 @@ package gokustudio.tentenbackground.activities;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -79,7 +82,6 @@ public class WallpaperPreviewActivity extends AppCompatActivity implements Downl
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDefaultDisplayHomeAsUpEnabled(true);
 
-
         Picasso.with(this).load(wallpaper.getUrl_2()).into(ivWallpaperPreview, new Callback() {
             @Override
             public void onSuccess() {
@@ -121,26 +123,16 @@ public class WallpaperPreviewActivity extends AppCompatActivity implements Downl
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_wallpaper_preview, menu);
-        return false;
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == android.R.id.home){
+            finish();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.home) {
-            NavUtils.navigateUpFromSameTask(this);
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+    public boolean onCreateOptionsMenu(Menu menu) {
+        return true;
     }
 
     @OnClick(R.id.wallpaper_activity_btn_set_wallpaper)

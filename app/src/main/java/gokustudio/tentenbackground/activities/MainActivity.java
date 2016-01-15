@@ -26,6 +26,7 @@ import gokustudio.tentenbackground.fragments.WallpaperFavoriteFragment;
 public class MainActivity extends AppCompatActivity {
 
     private FragmentManager fragmentManager;
+    Fragment f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .build();
 
-        Fragment f = MainFragment.getInstance();
+        f = MainFragment.getInstance();
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.frame_container, f).addToBackStack(f.getTag()).commit();
 

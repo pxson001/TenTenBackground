@@ -1,9 +1,12 @@
 package gokustudio.tentenbackground.fragments;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +21,7 @@ import com.bumptech.glide.Glide;
 import com.parse.ParseException;
 import com.wefika.flowlayout.FlowLayout;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +42,7 @@ import gokustudio.tentenbackground.models.parse.LocalWallpaper;
 import gokustudio.tentenbackground.models.parse.Tag;
 import gokustudio.tentenbackground.models.parse.Wallpaper;
 import gokustudio.tentenbackground.parse.WallpaperEndpoint;
+import gokustudio.tentenbackground.tasks.DownloadWallpaperAndShareTask;
 import gokustudio.tentenbackground.tasks.DownloadWallpaperTask;
 import gokustudio.tentenbackground.utils.Utils;
 import gokustudio.tentenbackground.views.TagView;
@@ -59,10 +64,6 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
 
     private WallpaperEndpoint wallpaperEndpoint;
     private WallpaperDatabase wallpaperDatabase;
-    private AsyncTask<Void, Void, List<Wallpaper>> loadWallpapersTask;
-
-
-
 
     @Bind(R.id.fragment_wallpaper_detail_iv_header)
     ImageView ivHeader;
@@ -99,29 +100,26 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View layout = inflater.inflate(R.layout.fragment_wallpaper_detail, null, false);
-        ButterKnife.bind(this, layout);
-
-        if (wallpaper != null) {
-            loadWallpaperInfo(wallpaper);
-            loadAuthorInfo(wallpaper);
-            loadWallpaperTags(wallpaper);
-            loadLocalFavoriteInfo(wallpaper);
-            updateUI(false);
-        } else {
-            loadWallpaperTask(calledFromActivity);
-        }
-        return layout;
-    }
-
-    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         wallpaperEndpoint = App.getWallpaperEndpoint();
         wallpaperDatabase = App.getWallpaperDatabase(getActivity());
 
         utils = new Utils(getActivity());
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View layout = inflater.inflate(R.layout.fragment_wallpaper_detail, null, false);
+        ButterKnife.bind(this, layout);
+
+        return layout;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
 
         calledFromActivity = getActivity().getIntent().getIntExtra(ActivityValues.EXTRA_ACTIVITY_VALUE, 0);
 
@@ -132,8 +130,19 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
             calledFromActivity = savedInstanceState.getInt(EXTRA_CALLED_FROM_ACTIVITY);
             wallpaper = (Wallpaper) savedInstanceState.getSerializable(EXTRA_WALLPAPAER);
         }
-
         getWallPaper(calledFromActivity);
+
+        if (wallpaper != null) {
+            loadWallpaperInfo(wallpaper);
+            loadAuthorInfo(wallpaper);
+            loadWallpaperTags(wallpaper);
+            loadLocalFavoriteInfo(wallpaper);
+            updateUI(false);
+
+            Log.d("Wallpaper Fragment", "not null");
+        }
+
+        setRetainInstance(true);
     }
 
     public void getWallPaper(int activityId) {
@@ -162,24 +171,6 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
         }
     }
 
-    public void loadWallpaperTask(int activityId) {
-        switch (activityId) {
-            case ActivityValues.MAIN_ACTIVITY:
-                loadWallpapersTask = new LoadRecentWallpapersTask(wallpaperEndpoint);
-                loadWallpapersTask.execute();
-                break;
-            case ActivityValues.WALLPAPER_BY_CATEGORY_ACTIVITY:
-                loadWallpapersTask = new LoadWallpapersByCategoryTask(wallpaperEndpoint);
-                loadWallpapersTask.execute();
-                break;
-            case ActivityValues.WALLPAPER_BY_TAG_ACTIVITY:
-                loadWallpapersTask = new LoadWallpapersByTagTask(wallpaperEndpoint);
-                loadWallpapersTask.execute();
-                break;
-
-        }
-    }
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -190,9 +181,6 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
 
     @Override
     public void onDestroyView() {
-        if (loadWallpapersTask != null) {
-            loadWallpapersTask.cancel(true);
-        }
         super.onDestroyView();
     }
 
@@ -231,7 +219,14 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
 
     @OnClick(R.id.fragment_wallpaper_detail_btn_share)
     public void share() {
+        LocalWallpaper localWallpaper = wallpaperDatabase.getFromLocal(wallpaper.getObjectId());
 
+        if (localWallpaper == null) {
+            new DownloadWallpaperAndShareTask(getActivity(), this).execute(wallpaper.getUrl_2());
+        } else {
+            String filePath =localWallpaper.getDownloadPath();
+            Utils.shareImage(getActivity(),filePath);
+        }
     }
 
     @Override
@@ -292,112 +287,5 @@ public class WallpaperDetailFragment extends Fragment implements TagView.OnTagCl
         Intent intent = new Intent(getActivity(), WallpaperByTagActivity.class);
         intent.putExtra(WallpaperByTagActivity.EXTRA_TAG, tag);
         startActivity(intent);
-    }
-
-    class LoadRecentWallpapersTask extends AsyncTask<Void, Void, List<Wallpaper>> {
-
-        private WallpaperEndpoint wallpaperEndpoint;
-
-        public LoadRecentWallpapersTask(WallpaperEndpoint wallpaperEndpoint) {
-            this.wallpaperEndpoint = wallpaperEndpoint;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            updateUI(true);
-        }
-
-        @Override
-        protected List<Wallpaper> doInBackground(Void... voids) {
-            List<Wallpaper> wallpapers = new ArrayList<>();
-            try {
-                wallpapers = wallpaperEndpoint.getAllRecent(App.getLoadedWallpapers().size(), App.LIMIT_LOAD_WALLPAPERS);
-            } catch (ParseException ex) {
-                ex.printStackTrace();
-            }
-            return wallpapers;
-        }
-
-        @Override
-        protected void onPostExecute(List<Wallpaper> wallpapers) {
-            App.addLoadedWallpaper(wallpapers, true);
-            wallpaper = App.getLoadedWallpapers().get(position);
-            updateUI(false);
-            loadWallpaperInfo(wallpaper);
-            loadAuthorInfo(wallpaper);
-            loadWallpaperTags(wallpaper);
-        }
-    }
-
-    class LoadWallpapersByCategoryTask extends AsyncTask<Void, Void, List<Wallpaper>> {
-
-        private WallpaperEndpoint wallpaperEndpoint;
-
-        public LoadWallpapersByCategoryTask(WallpaperEndpoint wallpaperEndpoint) {
-            this.wallpaperEndpoint = wallpaperEndpoint;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            updateUI(true);
-        }
-
-        @Override
-        protected List<Wallpaper> doInBackground(Void... voids) {
-            List<Wallpaper> wallpapers = new ArrayList<>();
-            try {
-                wallpapers = wallpaperEndpoint.getByCategory(App.getCurrentCategoryObjectId(), App.getLoadedWallpapersByCategory().size(), App.LIMIT_LOAD_WALLPAPERS);
-            } catch (ParseException ex) {
-                ex.printStackTrace();
-            }
-            return wallpapers;
-        }
-
-        @Override
-        protected void onPostExecute(List<Wallpaper> wallpapers) {
-            App.addLoadedWallpaperByCategory(wallpapers, true);
-            wallpaper = App.getLoadedWallpapersByCategory().get(position);
-            updateUI(false);
-            loadWallpaperInfo(wallpaper);
-            loadAuthorInfo(wallpaper);
-            loadWallpaperTags(wallpaper);
-        }
-    }
-
-
-    class LoadWallpapersByTagTask extends AsyncTask<Void, Void, List<Wallpaper>> {
-
-        private WallpaperEndpoint wallpaperEndpoint;
-
-        public LoadWallpapersByTagTask(WallpaperEndpoint wallpaperEndpoint) {
-            this.wallpaperEndpoint = wallpaperEndpoint;
-        }
-
-        @Override
-        protected void onPreExecute() {
-            updateUI(true);
-        }
-
-        @Override
-        protected List<Wallpaper> doInBackground(Void... voids) {
-            List<Wallpaper> wallpapers = new ArrayList<>();
-            try {
-                wallpapers = wallpaperEndpoint.getByTag(App.getCurrentTagObjectId(), App.getLoadedWallpapersByTag().size(), App.LIMIT_LOAD_WALLPAPERS);
-            } catch (ParseException ex) {
-                ex.printStackTrace();
-            }
-            return wallpapers;
-        }
-
-        @Override
-        protected void onPostExecute(List<Wallpaper> wallpapers) {
-            App.addLoadedWallpaperByTag(wallpapers, true);
-            System.out.println("Pager " + position);
-            wallpaper = App.getLoadedWallpapersByTag().get(position);
-            updateUI(false);
-            loadWallpaperInfo(wallpaper);
-            loadAuthorInfo(wallpaper);
-            loadWallpaperTags(wallpaper);
-        }
     }
 }

@@ -36,10 +36,11 @@ public class TagView extends Button implements View.OnClickListener {
         super(context);
         setBackgroundResource(R.drawable.button_tag);
         FlowLayout.LayoutParams layoutParams = new FlowLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        layoutParams.setMargins(2, 0, 2, 0);
-        setPadding(2, 2, 2, 2);
+        layoutParams.setMargins(5, 5, 5, 5);
+        setPadding(5, 2, 5, 2);
         setLayoutParams(layoutParams);
-        setText(tag.getName());
+        setTextSize(12);
+        setText("#" + tag.getName());
 
         this.tag = tag;
         this.setOnClickListener(this);

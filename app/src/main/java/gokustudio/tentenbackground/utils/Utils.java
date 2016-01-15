@@ -2,9 +2,11 @@ package gokustudio.tentenbackground.utils;
 
 import android.app.WallpaperManager;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 import android.view.Display;
@@ -79,14 +81,14 @@ public class Utils {
         return null;
     }
 
-    public String getFileFromSDCard(String fileName){
+    public String getFileFromSDCard(String fileName) {
         File folder = new File(Environment
                 .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
                 _context.getApplicationInfo().loadLabel(_context.getPackageManager()).toString());
-        if(folder.exists() && folder.isDirectory()) {
+        if (folder.exists() && folder.isDirectory()) {
             File[] files = folder.listFiles();
-            for(File file : files){
-                if(file.getName().equals(fileName)){
+            for (File file : files) {
+                if (file.getName().equals(fileName)) {
                     return file.getAbsolutePath();
                 }
             }
@@ -112,7 +114,7 @@ public class Utils {
         }
     }
 
-    public void setAsWallpaper(String filePath){
+    public void setAsWallpaper(String filePath) {
         Bitmap bitmap = getImageFromSDCard(filePath);
         setAsWallpaper(bitmap);
     }
@@ -129,6 +131,19 @@ public class Utils {
             }
         }
         return path;
+    }
+
+
+    public static void shareImage(Context context, String path) {
+        Intent share = new Intent(Intent.ACTION_SEND);
+
+        share.setType("image/*");
+
+        File imageFileToShare = new File(path);
+
+        Uri uri = Uri.fromFile(imageFileToShare);
+        share.putExtra(Intent.EXTRA_STREAM, uri);
+        context.startActivity(Intent.createChooser(share, "Share wallpaper!"));
     }
 }
 

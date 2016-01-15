@@ -3,6 +3,8 @@ package gokustudio.tentenbackground;
 import android.app.Application;
 import android.content.Context;
 
+import com.parse.Parse;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,7 +39,8 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
+        Parse.enableLocalDatastore(this);
+        Parse.initialize(this, "iBWHI4092YQkGgaQOfjj3KnZp5NvK1tQqvisBXBj", "BXaOhj7C7jcEKotfxEy8HXk2SAPe5iW6Z59x6Qx4");
     }
 
     public static WallpaperEndpoint getWallpaperEndpoint() {
